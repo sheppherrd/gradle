@@ -71,7 +71,6 @@ import java.nio.file.Files
 import javax.inject.Inject
 
 
-@CacheableTask
 abstract class GeneratePrecompiledScriptPluginAccessors @Inject internal constructor(
 
     private
