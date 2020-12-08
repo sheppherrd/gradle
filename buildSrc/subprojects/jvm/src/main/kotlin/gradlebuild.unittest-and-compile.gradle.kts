@@ -16,6 +16,7 @@
 
 import gradlebuild.basics.accessors.groovy
 import gradlebuild.basics.BuildEnvironment
+import gradlebuild.basics.testDistributionEnabled
 import gradlebuild.basics.tasks.ClasspathManifest
 import gradlebuild.basics.extension.vendorAndMajorVersion
 import gradlebuild.jvm.argumentproviders.CiEnvironmentProvider
@@ -50,16 +51,13 @@ tasks.registerCITestDistributionLifecycleTasks()
 fun configureCompile() {
     java.targetCompatibility = JavaVersion.VERSION_1_8
     java.sourceCompatibility = JavaVersion.VERSION_1_8
-    afterEvaluate {
-        val jdkForCompilation = buildJvms.compileJvm.get()
 
-        tasks.withType<JavaCompile>().configureEach {
-            configureCompileTask(this, options, jdkForCompilation)
-        }
-        tasks.withType<GroovyCompile>().configureEach {
-            groovyOptions.encoding = "utf-8"
-            configureCompileTask(this, options, jdkForCompilation)
-        }
+    tasks.withType<JavaCompile>().configureEach {
+        configureCompileTask(this, options, buildJvms.compileJvm.get())
+    }
+    tasks.withType<GroovyCompile>().configureEach {
+        groovyOptions.encoding = "utf-8"
+        configureCompileTask(this, options, buildJvms.compileJvm.get())
     }
     addCompileAllTask()
 }
@@ -68,13 +66,12 @@ fun configureSourcesVariant() {
     java {
         withSourcesJar()
     }
-    val implementation by configurations
 
     @Suppress("unused_variable")
     val transitiveSourcesElements by configurations.creating {
         isCanBeResolved = false
         isCanBeConsumed = true
-        extendsFrom(implementation)
+        extendsFrom(configurations.implementation.get())
         attributes {
             attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
             attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
@@ -185,8 +182,6 @@ fun Test.addOsAsInputs() {
     inputs.property("operatingSystem", "${OperatingSystem.current().name} ${System.getProperty("os.arch")}")
 }
 
-fun Project.testDistributionEnabled() = providers.systemProperty("enableTestDistribution").forUseAtConfigurationTime().orNull?.toBoolean() == true
-
 fun configureTests() {
     normalization {
         runtimeClasspath {
@@ -198,6 +193,8 @@ fun configureTests() {
     if (project.testDistributionEnabled()) {
         plugins.apply(TestDistributionPlugin::class.java)
     }
+
+    fun Test.isUnitTest() = listOf("test", "writePerformanceScenarioDefinitions", "writeTmpPerformanceScenarioDefinitions").contains(name)
 
     tasks.withType<Test>().configureEach {
         filterEnvironmentVariables()
@@ -219,15 +216,15 @@ fun configureTests() {
             }
         }
 
-        if (project.testDistributionEnabled()) {
+        if (project.testDistributionEnabled() && !isUnitTest()) {
+            println("Test distribution has been enabled for $testName")
+            useJUnitPlatform()
             distribution {
-                maxLocalExecutors.set(0)
-                maxRemoteExecutors.set(if ("test" == testName) 5 else 20)
                 enabled.set(true)
                 when {
-                    OperatingSystem.current().isLinux -> requirements.set(listOf("os=linux"))
-                    OperatingSystem.current().isWindows -> requirements.set(listOf("os=windows"))
-                    OperatingSystem.current().isMacOsX -> requirements.set(listOf("os=macos"))
+                    OperatingSystem.current().isLinux -> requirements.set(listOf("os=linux", "gbt-dogfooding"))
+                    OperatingSystem.current().isWindows -> requirements.set(listOf("os=windows", "gbt-dogfooding"))
+                    OperatingSystem.current().isMacOsX -> requirements.set(listOf("os=macos", "gbt-dogfooding"))
                 }
             }
         }

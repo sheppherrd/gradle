@@ -1,6 +1,3 @@
-import gradlebuild.cleanup.WhenNotEmpty
-import gradlebuild.integrationtests.integrationTestUsesSampleDir
-
 plugins {
     id("gradlebuild.distribution.api-java")
 }
@@ -74,14 +71,8 @@ strictCompile {
 
 classycle {
     // These public packages have classes that are tangled with the corresponding internal package.
-    excludePatterns.set(listOf(
-        "org/gradle/api/tasks/compile/**",
-        "org/gradle/external/javadoc/**"
-    ))
+    excludePatterns.add("org/gradle/api/tasks/compile/**")
+    excludePatterns.add("org/gradle/external/javadoc/**")
 }
 
-testFilesCleanup {
-    policy.set(WhenNotEmpty.REPORT)
-}
-
-integrationTestUsesSampleDir("subprojects/language-java/src/main")
+integTest.usesSamples.set(true)

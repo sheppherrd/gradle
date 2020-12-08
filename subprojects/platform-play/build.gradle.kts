@@ -1,5 +1,4 @@
 import gradlebuild.basics.BuildEnvironment
-import gradlebuild.integrationtests.integrationTestUsesSampleDir
 import gradlebuild.integrationtests.tasks.IntegrationTest
 
 plugins {
@@ -93,6 +92,7 @@ strictCompile {
     ignoreRawTypes() // deprecated raw types
     ignoreDeprecations() // uses deprecated software model types
 }
+
 val integTestPrepare by tasks.registering(IntegrationTest::class) {
     systemProperties["org.gradle.integtest.executer"] = "embedded"
     if (BuildEnvironment.isCiServer) {
@@ -114,4 +114,4 @@ tasks.withType<IntegrationTest>().configureEach {
     }
 }
 
-integrationTestUsesSampleDir("subprojects/platform-play/src/main")
+integTest.usesSamples.set(true)
