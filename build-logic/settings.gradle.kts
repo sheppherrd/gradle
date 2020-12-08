@@ -72,6 +72,9 @@ include("build-platform")
 // Utilities for updating the build itself which are not part of the usual build process
 include("build-update-utils")
 
+// Collection of plugins to make local development more pleasant (applied in each root)
+include("local-development")
+
 // Shared basics for all
 include("basics")
 
